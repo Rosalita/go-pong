@@ -40,7 +40,7 @@ func(p *paddle) draw(pixels []byte){
 
 	for y :=0; y < p.height; y++{
 		for x := 0;  x < p.width; x++ {
-			setPixel(startX+x, startY+y, colour{255, 255, 255}, pixels})
+			setPixel(startX+x, startY+y, colour{255, 255, 255}, pixels)
 		}
 	}
 
