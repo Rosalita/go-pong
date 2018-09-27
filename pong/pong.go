@@ -15,46 +15,55 @@ type colour struct {
 	r, g, b byte
 }
 
-type position struct {
+type pos struct {
 	x, y float32
 }
 
 type ball struct {
-	position
-	radius int
+	pos
+	radius    int
 	xVelocity float32
 	yVelocity float32
-	colour colour
+	colour    colour
 }
 
 type paddle struct {
-	position 
-	width int
+	pos
+	width  int
 	height int
 	colour colour
 }
 
-func(p *paddle) draw(pixels []byte){
+func (p *paddle) draw(pixels []byte) {
 	startX := int(p.x) - p.width/2
 	startY := int(p.y) - p.height/2
 
-	for y :=0; y < p.height; y++{
-		for x := 0;  x < p.width; x++ {
-			setPixel(startX+x, startY+y, colour{255, 255, 255}, pixels)
+	for y := 0; y < p.height; y++ {
+		for x := 0; x < p.width; x++ {
+			setPixel(startX+x, startY+y, p.colour, pixels)
 		}
 	}
+}
 
+func (b *ball) draw(pixels []byte) {
+	for y := -b.radius; y < b.radius; y++ {
+		for x := -b.radius; x < b.radius; x++ {
+			if (x*x)+(y*y) < (b.radius * b.radius) {
+				setPixel(int(b.x)+x, int(b.y)+y, b.colour, pixels)
+			}
+		}
+	}
 }
 
 func main() {
 
-err := sdl.Init(sdl.INIT_EVERYTHING)
+	err := sdl.Init(sdl.INIT_EVERYTHING)
 
-if err != nil {
-	fmt.Println(err)
-	return
-}
-defer sdl.Quit()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer sdl.Quit()
 
 	window, err := sdl.CreateWindow("Hello I'm a window",
 		sdl.WINDOWPOS_UNDEFINED,
@@ -84,35 +93,42 @@ defer sdl.Quit()
 	}
 	defer texture.Destroy()
 	pixels := make([]byte, windowWidth*windowHeight*4)
-	for y := 0; y < windowHeight; y++ {
-		for x := 0; x < windowWidth; x++ {
-			if y%2 == 0 {
-				setPixel(x, y, colour{byte(x % 255), 0, 0}, pixels)
-			} else if y%3 == 0{
-				setPixel(x, y, colour{0, byte(y % 255), 0}, pixels)
-			} else {
-				setPixel(x, y, colour{0, 0, byte(y % 255)}, pixels)
-			}
-		}
-	}
-	texture.Update(nil, pixels, windowWidth*4)
-	renderer.Copy(texture, nil, nil)
-	renderer.Present()
+	// for y := 0; y < windowHeight; y++ {
+	// 	for x := 0; x < windowWidth; x++ {
+	// 		if y%2 == 0 {
+	// 			setPixel(x, y, colour{byte(x % 255), 0, 0}, pixels)
+	// 		} else if y%3 == 0{
+	// 			setPixel(x, y, colour{0, byte(y % 255), 0}, pixels)
+	// 		} else {
+	// 			setPixel(x, y, colour{0, 0, byte(y % 255)}, pixels)
+	// 		}
+	// 	}
+	// }
+	// texture.Update(nil, pixels, windowWidth*4)
+	// renderer.Copy(texture, nil, nil)
+	// renderer.Present()
 
+	player1 := paddle{pos{100, 100}, 20, 100, colour{255, 255, 255}}
+	ball := ball{pos{300, 300}, 20, 0, 0, colour{255, 255, 255}}
 
-	//sdl.Delay(5000)
+	for {
+		// for event := sdl.PollEvent(); event != nil; sdl.PollEvent() {
+		// 	switch event.(type) {
+		// 	case *sdl.QuitEvent:
+		// 		return
+		// 	}
 
-	for{
-		for event := sdl.PollEvent(); event != nil; sdl.PollEvent(){
-			switch event.(type) {
-			case *sdl.QuitEvent:
-				return
-			}
-		}
+		// }
+
+		player1.draw(pixels)
+		ball.draw(pixels)
+
+		texture.Update(nil, pixels, windowWidth*4)
+		renderer.Copy(texture, nil, nil)
+		renderer.Present()
+
 		sdl.Delay(16)
 	}
-
-
 
 }
 func setPixel(x, y int, colour colour, pixels []byte) {
