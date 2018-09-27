@@ -93,32 +93,17 @@ func main() {
 	}
 	defer texture.Destroy()
 	pixels := make([]byte, windowWidth*windowHeight*4)
-	// for y := 0; y < windowHeight; y++ {
-	// 	for x := 0; x < windowWidth; x++ {
-	// 		if y%2 == 0 {
-	// 			setPixel(x, y, colour{byte(x % 255), 0, 0}, pixels)
-	// 		} else if y%3 == 0{
-	// 			setPixel(x, y, colour{0, byte(y % 255), 0}, pixels)
-	// 		} else {
-	// 			setPixel(x, y, colour{0, 0, byte(y % 255)}, pixels)
-	// 		}
-	// 	}
-	// }
-	// texture.Update(nil, pixels, windowWidth*4)
-	// renderer.Copy(texture, nil, nil)
-	// renderer.Present()
 
 	player1 := paddle{pos{100, 100}, 20, 100, colour{255, 255, 255}}
 	ball := ball{pos{300, 300}, 20, 0, 0, colour{255, 255, 255}}
 
 	for {
-		// for event := sdl.PollEvent(); event != nil; sdl.PollEvent() {
-		// 	switch event.(type) {
-		// 	case *sdl.QuitEvent:
-		// 		return
-		// 	}
-
-		// }
+		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+			switch event.(type) {
+			case *sdl.QuitEvent:
+				return
+			}
+		}
 
 		player1.draw(pixels)
 		ball.draw(pixels)
