@@ -45,6 +45,19 @@ func (p *paddle) draw(pixels []byte) {
 	}
 }
 
+func (p *paddle) update(keyState []uint8) {
+	if keyState[sdl.SCANCODE_UP] != 0 {
+		p.y -= 8
+	}
+	if keyState[sdl.SCANCODE_DOWN] != 0 {
+		p.y += 8
+	}
+}
+
+func (p *paddle) aiUpdate(ball *ball){
+ p.y = ball.y
+}
+
 func (b *ball) draw(pixels []byte) {
 	for y := -b.radius; y < b.radius; y++ {
 		for x := -b.radius; x < b.radius; x++ {
@@ -53,6 +66,26 @@ func (b *ball) draw(pixels []byte) {
 			}
 		}
 	}
+}
+
+func (b *ball) update() {
+	b.x += b.xVelocity
+	b.y += b.yVelocity
+
+	if int(b.y) - b.radius < 0 || int(b.y) + b.radius > windowHeight {
+		b.yVelocity = -b.yVelocity
+	}
+
+	if b.x < 0 || int(b.x) > windowWidth {
+		b.x = 300
+		b.y = 300
+	}
+}
+
+func clear(pixels []byte){
+  for i := range pixels{
+	  pixels[i] = 0
+  }
 }
 
 func main() {
@@ -71,17 +104,20 @@ func main() {
 		int32(windowWidth),
 		int32(windowHeight),
 		sdl.WINDOW_SHOWN)
+
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	defer window.Destroy()
+
 	renderer, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	defer renderer.Destroy()
+
 	texture, err := renderer.CreateTexture(
 		sdl.PIXELFORMAT_ABGR8888,
 		sdl.TEXTUREACCESS_STREAMING,
@@ -92,10 +128,16 @@ func main() {
 		return
 	}
 	defer texture.Destroy()
+
 	pixels := make([]byte, windowWidth*windowHeight*4)
 
 	player1 := paddle{pos{100, 100}, 20, 100, colour{255, 255, 255}}
-	ball := ball{pos{300, 300}, 20, 0, 0, colour{255, 255, 255}}
+	player2 := paddle{pos{700, 100}, 20, 100, colour{255, 255, 255}}
+
+	ball := ball{pos{300, 300}, 20, 10, 10, colour{255, 255, 255}}
+	
+
+	keyState := sdl.GetKeyboardState()
 
 	for {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
@@ -105,7 +147,15 @@ func main() {
 			}
 		}
 
+		clear(pixels)
+
+		player1.update(keyState)
+		player2.aiUpdate(&ball)
+		ball.update()
+
+
 		player1.draw(pixels)
+		player2.draw(pixels)
 		ball.draw(pixels)
 
 		texture.Update(nil, pixels, windowWidth*4)
