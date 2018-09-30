@@ -68,7 +68,7 @@ func (b *ball) draw(pixels []byte) {
 	}
 }
 
-func (b *ball) update() {
+func (b *ball) update( leftPaddle *paddle, rightPaddle *paddle) {
 	b.x += b.xVelocity
 	b.y += b.yVelocity
 
@@ -79,6 +79,18 @@ func (b *ball) update() {
 	if b.x < 0 || int(b.x) > windowWidth {
 		b.x = 300
 		b.y = 300
+	}
+
+	if int(b.x) < int(leftPaddle.x) + leftPaddle.width/2{
+		if int(b.y) > int(leftPaddle.y) - leftPaddle.height/2 && int(b.y) < int(leftPaddle.y) + leftPaddle.height/2{
+			b.xVelocity = -b.xVelocity
+		}
+	}
+
+	if int(b.x) > int(rightPaddle.x) - rightPaddle.width/2{
+		if int(b.y) > int(rightPaddle.y) - rightPaddle.height/2 && int(b.y) < int(rightPaddle.y) + rightPaddle.height/2{
+			b.xVelocity = -b.xVelocity
+		}
 	}
 }
 
@@ -151,7 +163,7 @@ func main() {
 
 		player1.update(keyState)
 		player2.aiUpdate(&ball)
-		ball.update()
+		ball.update(&player1, &player2)
 
 
 		player1.draw(pixels)
