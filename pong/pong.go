@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
-	"time"
 	"math"
+	"math/rand"
+	"strconv"
+	"time"
 
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -16,36 +18,109 @@ const (
 type gameState int
 
 const (
-	start gameState = iota
+	titleScreen gameState = iota
+	restart
 	play
 )
 
-var state = start
+var state = titleScreen
 
-var nums = [][]byte{
-	{1, 1, 1,
+var chars = map[string][]byte{
+	"0": {1, 1, 1,
 		1, 0, 1,
 		1, 0, 1,
 		1, 0, 1,
 		1, 1, 1,
 	},
-	{1, 1, 0,
+	"1": {1, 1, 0,
 		0, 1, 0,
 		0, 1, 0,
 		0, 1, 0,
 		1, 1, 1,
 	},
-	{1, 1, 1,
+	"2": {1, 1, 1,
 		0, 0, 1,
 		1, 1, 1,
 		1, 0, 0,
 		1, 1, 1,
 	},
-	{1, 1, 1,
+	"3": {1, 1, 1,
 		0, 0, 1,
 		1, 1, 1,
 		0, 0, 1,
 		1, 1, 1,
+	},
+	"a": {1, 1, 1,
+		1, 0, 1,
+		1, 1, 1,
+		1, 0, 1,
+		1, 0, 1,
+	},
+	"b": {1, 1, 1,
+		1, 0, 1,
+		1, 1, 0,
+		1, 0, 1,
+		1, 1, 1,
+	},
+	"e": {1, 1, 1,
+		1, 0, 0,
+		1, 1, 1,
+		1, 0, 0,
+		1, 1, 1,
+	},
+	"g": {1, 1, 1,
+		1, 0, 1,
+		1, 1, 1,
+		0, 0, 1,
+		1, 1, 1,
+	},
+	"i": {0, 1, 0,
+		0, 0, 0,
+		0, 1, 0,
+		0, 1, 0,
+		0, 1, 0,
+	},
+	"n": {1, 1, 1,
+		1, 0, 1,
+		1, 0, 1,
+		1, 0, 1,
+		1, 0, 1,
+	},
+	"p": {1, 1, 1,
+		1, 0, 1,
+		1, 1, 1,
+		1, 0, 0,
+		1, 0, 0,
+	},
+	"r": {1, 1, 1,
+		1, 0, 1,
+		1, 1, 0,
+		1, 0, 1,
+		1, 0, 1,
+	},
+	"s": {1, 1, 1,
+		1, 0, 0,
+		1, 1, 0,
+		0, 0, 1,
+		1, 1, 1,
+	},
+	"t": {1, 1, 1,
+		0, 1, 0,
+		0, 1, 0,
+		0, 1, 0,
+		0, 1, 0,
+	},
+	"w": {1, 0, 1,
+		1, 0, 1,
+		1, 0, 1,
+		1, 1, 1,
+		1, 0, 1,
+	},
+	" ": {0, 0, 0,
+		0, 0, 0,
+		0, 0, 0,
+		0, 0, 0,
+		0, 0, 0,
 	},
 }
 
@@ -74,6 +149,49 @@ type paddle struct {
 	colour colour
 }
 
+type text struct {
+	pos
+	size       int
+	characters string
+	colour     colour
+}
+
+func (t *text) draw(pixels []byte) {
+	x := int(t.x) - (t.size*3)/2
+	y := int(t.y) - (t.size*5)/2
+
+	for i, c := range t.characters {
+		if i == 0 {
+			drawChar(pos{float32(x), float32(y)}, t.colour, t.size, string(c), pixels)
+			x += (t.size * 3) + t.size
+			continue
+		}
+		drawChar(pos{float32(x), float32(y)}, t.colour, t.size, string(c), pixels)
+		x += (t.size * 3) + t.size
+	}
+}
+
+func (t *text) rainbowUpdate() {
+
+	rainbow := []colour{
+		colour{255, 0, 0},
+		colour{255, 128, 0},
+		colour{255, 255, 0},
+		colour{0, 255, 0},
+		colour{0, 255, 255},
+		colour{0, 0, 255},
+		colour{128, 0, 255},
+		colour{255, 0, 255},
+		colour{255, 0, 128},
+	}
+
+	rand.Seed(time.Now().Unix())
+	randnum := rand.Intn(9)
+
+	t.colour = rainbow[randnum]
+
+}
+
 func (p *paddle) draw(pixels []byte) {
 	startX := int(p.x) - int(p.w)/2
 	startY := int(p.y) - int(p.h)/2
@@ -85,7 +203,7 @@ func (p *paddle) draw(pixels []byte) {
 	}
 
 	numX := lerp(p.x, getCentre().x, 0.2)
-	drawNumber(pos{numX, 35}, p.colour, 10, p.score, pixels)
+	drawChar(pos{numX, 35}, p.colour, 10, strconv.Itoa(p.score), pixels)
 }
 
 func (p *paddle) update(keyState []uint8, controllerAxis int16, elapsedTime float32) {
@@ -97,7 +215,7 @@ func (p *paddle) update(keyState []uint8, controllerAxis int16, elapsedTime floa
 	}
 
 	if math.Abs(float64(controllerAxis)) > 1500 {
-		pct := float32(controllerAxis) / 	32767.0
+		pct := float32(controllerAxis) / 32767.0
 		p.y += p.speed * pct * elapsedTime
 	}
 }
@@ -133,13 +251,13 @@ func (b *ball) update(leftPaddle *paddle, rightPaddle *paddle, elapsedTime float
 	if b.x < 0 {
 		rightPaddle.score++
 		b.pos = getCentre()
-		state = start
+		state = restart
 	}
 
 	if b.x > windowWidth {
 		leftPaddle.score++
 		b.pos = getCentre()
-		state = start
+		state = restart
 	}
 
 	if b.x-b.radius < leftPaddle.x+leftPaddle.w/2 {
@@ -163,11 +281,11 @@ func clear(pixels []byte) {
 	}
 }
 
-func drawNumber(pos pos, colour colour, size int, num int, pixels []byte) {
+func drawChar(pos pos, colour colour, size int, char string, pixels []byte) {
 	startX := int(pos.x) - (size*3)/2 // numbers are minimum 3 pixels wide
 	startY := int(pos.y) - (size*5)/2 // numbers are minimum 5 pixels high
 
-	for i, v := range nums[num] {
+	for i, v := range chars[char] {
 		if v == 1 {
 			for y := startY; y < startY+size; y++ {
 				for x := startX; x < startX+size; x++ {
@@ -235,13 +353,15 @@ func main() {
 	defer texture.Destroy()
 
 	var controllerHandlers []*sdl.GameController
-	for i := 0;  i < sdl.NumJoysticks(); i++ {
+	for i := 0; i < sdl.NumJoysticks(); i++ {
 		controllerHandlers = append(controllerHandlers, sdl.GameControllerOpen(i))
 		defer controllerHandlers[i].Close()
-	}	
+	}
 
 	pixels := make([]byte, windowWidth*windowHeight*4)
 
+	titleText := text{pos{100, 100}, 10, "rainb0w p0ng", colour{255, 255, 255}}
+	pressStartText := text{pos{300, 300}, 10, "press start", colour{255, 255, 255}}
 	player1 := paddle{pos{100, 100}, 20, 100, 300, 0, colour{255, 255, 255}}
 	player2 := paddle{pos{700, 100}, 20, 100, 300, 0, colour{255, 255, 255}}
 
@@ -264,34 +384,49 @@ func main() {
 		for _, controller := range controllerHandlers {
 			if controller != nil {
 				controllerAxis = controller.Axis(sdl.CONTROLLER_AXIS_LEFTY)
-			
+
 			}
 		}
 
-		if state == play {
+		if state == titleScreen {
+			clear(pixels)
+			titleText.rainbowUpdate()
+			titleText.draw(pixels)
+			pressStartText.draw(pixels)
 
+			if keyState[sdl.SCANCODE_SPACE] != 0 {
+				state = play
+			}
+
+		}
+
+		if state == play {
+			clear(pixels)
 			player1.update(keyState, controllerAxis, elapsedTime)
 			player2.aiUpdate(&ball, elapsedTime)
 			ball.update(&player1, &player2, elapsedTime)
 
+			player1.draw(pixels)
+			player2.draw(pixels)
+			ball.draw(pixels)
+
 		}
 
-		if state == start{
+		if state == restart {
+
+			player1.draw(pixels)
+			player2.draw(pixels)
+			ball.draw(pixels)
+
 			if keyState[sdl.SCANCODE_SPACE] != 0 {
-				if player1.score == 3 || player2.score == 3{
+				if player1.score == 3 || player2.score == 3 {
 					player1.score = 0
 					player2.score = 0
 				}
-			
+
 				state = play
 			}
 		}
-
-		clear(pixels)
-
-		player1.draw(pixels)
-		player2.draw(pixels)
-		ball.draw(pixels)
 
 		texture.Update(nil, pixels, windowWidth*4)
 		renderer.Copy(texture, nil, nil)
