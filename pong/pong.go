@@ -21,6 +21,7 @@ const (
 	titleScreen gameState = iota
 	restart
 	play
+	gameOver
 )
 
 var state = titleScreen
@@ -49,6 +50,42 @@ var chars = map[string][]byte{
 		1, 1, 1,
 		0, 0, 1,
 		1, 1, 1,
+	},
+	"4": {1, 0, 1,
+		1, 0, 1,
+		1, 1, 1,
+		0, 0, 1,
+		0, 0, 1,
+	},
+	"5": {1, 1, 1,
+		1, 0, 0,
+		1, 1, 1,
+		0, 0, 1,
+		1, 1, 1,
+	},
+	"6": {1, 1, 1,
+		1, 0, 0,
+		1, 1, 1,
+		1, 0, 1,
+		1, 1, 1,
+	},
+	"7": {1, 1, 1,
+		0, 0, 1,
+		0, 0, 1,
+		0, 0, 1,
+		0, 0, 1,
+	},
+	"8": {1, 1, 1,
+		1, 0, 1,
+		1, 1, 1,
+		1, 0, 1,
+		1, 1, 1,
+	},
+	"9": {1, 1, 1,
+		1, 0, 1,
+		1, 1, 1,
+		0, 0, 1,
+		0, 0, 1,
 	},
 	"a": {1, 1, 1,
 		1, 0, 1,
@@ -80,6 +117,12 @@ var chars = map[string][]byte{
 		0, 1, 0,
 		0, 1, 0,
 	},
+	"m": {1, 0, 1,
+		1, 1, 1,
+		1, 0, 1,
+		1, 0, 1,
+		1, 0, 1,
+	},
 	"n": {1, 1, 1,
 		1, 0, 1,
 		1, 0, 1,
@@ -107,6 +150,12 @@ var chars = map[string][]byte{
 	"t": {1, 1, 1,
 		0, 1, 0,
 		0, 1, 0,
+		0, 1, 0,
+		0, 1, 0,
+	},
+	"v": {1, 0, 1,
+		1, 0, 1,
+		1, 0, 1,
 		0, 1, 0,
 		0, 1, 0,
 	},
@@ -203,25 +252,32 @@ func (p *paddle) draw(pixels []byte) {
 	}
 
 	numX := lerp(p.x, getCentre().x, 0.2)
-	drawChar(pos{numX, 35}, p.colour, 10, strconv.Itoa(p.score), pixels)
+	drawChar(pos{numX, 35}, rainbowColour(3), 10, strconv.Itoa(p.score), pixels)
 }
 
 func (p *paddle) update(keyState []uint8, controllerAxis int16, elapsedTime float32) {
 	if keyState[sdl.SCANCODE_UP] != 0 {
-		p.y -= p.speed * elapsedTime
+		if p.y > 0+(p.h/2) {
+			p.y -= p.speed * elapsedTime
+		}
+
 	}
 	if keyState[sdl.SCANCODE_DOWN] != 0 {
-		p.y += p.speed * elapsedTime
+		if p.y < windowHeight-(p.h/2) {
+			p.y += p.speed * elapsedTime
+		}
 	}
 
 	if math.Abs(float64(controllerAxis)) > 1500 {
 		pct := float32(controllerAxis) / 32767.0
 		p.y += p.speed * pct * elapsedTime
 	}
+	p.colour = rainbowColour(0)
 }
 
 func (p *paddle) aiUpdate(ball *ball, elapsedTime float32) {
 	p.y = ball.y
+	p.colour = rainbowColour(1)
 }
 
 func (b *ball) draw(pixels []byte) {
@@ -273,6 +329,27 @@ func (b *ball) update(leftPaddle *paddle, rightPaddle *paddle, elapsedTime float
 			b.x = rightPaddle.x - rightPaddle.w/2.0 - b.radius
 		}
 	}
+
+	b.colour = rainbowColour(2)
+}
+
+func rainbowColour(offset int64) colour{
+	
+	rainbow := []colour{
+		colour{255, 0, 0},
+		colour{255, 128, 0},
+		colour{255, 255, 0},
+		colour{0, 255, 0},
+		colour{0, 255, 255},
+		colour{0, 0, 255},
+		colour{128, 0, 255},
+		colour{255, 0, 255},
+		colour{255, 0, 128},
+	}
+
+	rand.Seed(time.Now().Unix()+offset)
+	randnum := rand.Intn(9)
+	return rainbow[randnum]
 }
 
 func clear(pixels []byte) {
@@ -321,7 +398,7 @@ func main() {
 	}
 	defer sdl.Quit()
 
-	window, err := sdl.CreateWindow("Hello I'm a window",
+	window, err := sdl.CreateWindow("Rainbow Pong!",
 		sdl.WINDOWPOS_UNDEFINED,
 		sdl.WINDOWPOS_UNDEFINED,
 		int32(windowWidth),
@@ -360,8 +437,9 @@ func main() {
 
 	pixels := make([]byte, windowWidth*windowHeight*4)
 
-	titleText := text{pos{100, 100}, 10, "rainb0w p0ng", colour{255, 255, 255}}
-	pressStartText := text{pos{300, 300}, 10, "press start", colour{255, 255, 255}}
+	titleText := text{pos{200, 100}, 10, "rainb0w p0ng", colour{255, 255, 255}}
+	pressStartText := text{pos{220, 300}, 10, "press start", colour{255, 255, 255}}
+	gameOverText := text{pos{250, 300}, 10, "game 0ver", colour{255, 255, 255}}
 	player1 := paddle{pos{100, 100}, 20, 100, 300, 0, colour{255, 255, 255}}
 	player2 := paddle{pos{700, 100}, 20, 100, 300, 0, colour{255, 255, 255}}
 
@@ -393,7 +471,6 @@ func main() {
 			titleText.rainbowUpdate()
 			titleText.draw(pixels)
 			pressStartText.draw(pixels)
-
 			if keyState[sdl.SCANCODE_SPACE] != 0 {
 				state = play
 			}
@@ -418,13 +495,25 @@ func main() {
 			player2.draw(pixels)
 			ball.draw(pixels)
 
-			if keyState[sdl.SCANCODE_SPACE] != 0 {
-				if player1.score == 3 || player2.score == 3 {
-					player1.score = 0
-					player2.score = 0
+			if player1.score > 9 || player2.score > 9 {
+				player1.score = 0
+				player2.score = 0
+				state = gameOver
+			} else {
+				if keyState[sdl.SCANCODE_SPACE] != 0 {
+					state = play
 				}
+			}
 
-				state = play
+		}
+
+		if state == gameOver {
+			clear(pixels)
+			gameOverText.rainbowUpdate()
+			gameOverText.draw(pixels)
+			if keyState[sdl.SCANCODE_SPACE] != 0 {
+				state = titleScreen
+				sdl.Delay(500)
 			}
 		}
 
